@@ -1,28 +1,58 @@
 package easytests.core.models;
 
 import easytests.core.entities.UserEntity;
-import easytests.support.UsersSupport;
+import easytests.core.models.empty.ModelsListEmpty;
+import easytests.support.Entities;
+import org.junit.Assert;
 import org.junit.Test;
-
+import org.junit.runner.RunWith;
+import org.meanbean.test.BeanTester;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author malinink
  */
-public class UserModelTest extends AbstractModelTest {
-
-    private UsersSupport usersSupport = new UsersSupport();
-
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class UserModelTest {
     @Test
     public void testCommon() throws Exception {
-        super.testCommon(UserModel.class);
+        new BeanTester().testBean(UserModel.class);
     }
 
     @Test
     public void testMap() throws Exception {
-        final UserEntity userEntity = this.usersSupport.getEntityFixtureMock(0);
+        final Integer userId = 3;
+        final String firstName = "FirstName";
+        final String lastName = "LastName";
+        final String surname = "Surname";
+        final String email = "email";
+        final String password = "password";
+        final Boolean isAdmin = false;
+        final Integer state = 2;
+        final UserEntity userEntity = Entities.createUserEntityMock(
+                userId,
+                firstName,
+                lastName,
+                surname,
+                email,
+                password,
+                isAdmin,
+                state
+        );
+
         final UserModel userModel = new UserModel();
         userModel.map(userEntity);
 
-        this.usersSupport.assertEquals(userEntity, userModel);
+        Assert.assertEquals(userId, userModel.getId());
+        Assert.assertEquals(firstName, userModel.getFirstName());
+        Assert.assertEquals(lastName, userModel.getLastName());
+        Assert.assertEquals(surname, userModel.getSurname());
+        Assert.assertEquals(email, userModel.getEmail());
+        Assert.assertEquals(password, userModel.getPassword());
+        Assert.assertEquals(isAdmin, userModel.getIsAdmin());
+        Assert.assertEquals(state, userModel.getState());
+        Assert.assertEquals(new ModelsListEmpty(), userModel.getSubjects());
     }
 }

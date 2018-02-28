@@ -7,15 +7,14 @@ import easytests.core.models.TesteeModelInterface;
 import easytests.core.models.QuizModelInterface;
 import easytests.core.options.TesteesOptionsInterface;
 import easytests.core.services.exceptions.DeleteUnidentifiedModelException;
-import easytests.support.QuizzesSupport;
-import easytests.support.TesteesSupport;
+import easytests.support.Entities;
+import easytests.support.Models;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import static org.mockito.BDDMockito.*;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,9 +38,6 @@ public class TesteesServiceTest {
     @Autowired
     private TesteesService testeesService;
 
-    private TesteesSupport testeesSupport = new TesteesSupport();
-
-    private QuizzesSupport quizzesSupport = new QuizzesSupport();
 
     private TesteeModelInterface mapTesteeModel(TesteeEntity testeeEntity) {
         final TesteeModelInterface testeeModel = new TesteeModel();
@@ -49,42 +45,56 @@ public class TesteesServiceTest {
         return testeeModel;
     }
 
+    private TesteeEntity mapTesteeEntity(TesteeModelInterface testeeModel) {
+        final TesteeEntity testeeEntity = new TesteeEntity();
+        testeeEntity.map(testeeModel);
+        return testeeEntity;
+    }
+
     private List<TesteeEntity> getTesteesEntities() {
         final List<TesteeEntity> testeesEntities = new ArrayList<>(2);
-        testeesEntities.add(this.testeesSupport.getEntityFixtureMock(0));
-        testeesEntities.add(this.testeesSupport.getEntityFixtureMock(1));
+        final TesteeEntity testeeEntityFirst = Entities.createTesteeEntityMock(
+                1,
+                "FirstName1",
+                "LastName1",
+                "Surname1",
+                301,
+                1
+        );
+        final TesteeEntity testeeEntitySecond = Entities.createTesteeEntityMock(
+                2,
+                "FirstName2",
+                "LastName2",
+                "Surname2",
+                302,
+                2
+        );
+        testeesEntities.add(testeeEntityFirst);
+        testeesEntities.add(testeeEntitySecond);
         return testeesEntities;
     }
 
     private List<TesteeModelInterface> getTesteesModels() {
         final List<TesteeModelInterface> testeesModels = new ArrayList<>(2);
-        testeesModels.add(this.testeesSupport.getModelFixtureMock(0));
-        testeesModels.add(this.testeesSupport.getModelFixtureMock(1));
+        for (TesteeEntity testeeEntity: this.getTesteesEntities()) {
+            testeesModels.add(this.mapTesteeModel(testeeEntity));
+        }
         return testeesModels;
-    }
-
-    private void assertServicesSet(TesteesOptionsInterface testeesOptions){
-        this.assertServicesSet(testeesOptions, 1);
-    }
-
-    private void assertServicesSet(TesteesOptionsInterface testeesOptions, Integer times){
-        verify(testeesOptions, times(times)).setQuizzesService(any(QuizzesService.class));
-        verify(testeesOptions, times(times)).setTesteesService(any(TesteesService.class));
     }
 
     @Test
     public void testFindAllPresentList() throws Exception {
         final List<TesteeEntity> testeesEntities = this.getTesteesEntities();
-        when(this.testeesMapper.findAll()).thenReturn(testeesEntities);
+        given(this.testeesMapper.findAll()).willReturn(testeesEntities);
 
         final List<TesteeModelInterface> testeesModels = this.testeesService.findAll();
 
-        this.testeesSupport.assertModelsListEquals(this.getTesteesModels(), testeesModels);
+        Assert.assertEquals(this.getTesteesModels(), testeesModels);
     }
 
     @Test
     public void testFindAllAbsentList() throws Exception {
-        when(this.testeesMapper.findAll()).thenReturn(new ArrayList<>(0));
+        given(this.testeesMapper.findAll()).willReturn(new ArrayList<>(0));
 
         final List<TesteeModelInterface> testeesModels = this.testeesService.findAll();
 
@@ -93,142 +103,205 @@ public class TesteesServiceTest {
 
     @Test
     public void testFindAllWithOptions() throws Exception {
-        final ArgumentCaptor<List> listCaptor = ArgumentCaptor.forClass(List.class);
         final List<TesteeEntity> testeesEntities = this.getTesteesEntities();
         final List<TesteeModelInterface> testeesModels = this.getTesteesModels();
         final TesteesOptionsInterface testeesOptions = Mockito.mock(TesteesOptionsInterface.class);
-        when(this.testeesMapper.findAll()).thenReturn(testeesEntities);
-        when(testeesOptions.withRelations(listCaptor.capture())).thenReturn(testeesModels);
+        given(this.testeesMapper.findAll()).willReturn(testeesEntities);
+        given(testeesOptions.withRelations(Mockito.anyList())).willReturn(testeesModels);
 
-        final List<TesteeModelInterface> testeesFoundedModels = this.testeesService.findAll(testeesOptions);
+        final List<TesteeModelInterface> foundedTesteesModels = this.testeesService.findAll(testeesOptions);
 
-        this.assertServicesSet(testeesOptions);
-        this.testeesSupport.assertModelsListEquals(testeesModels, listCaptor.getValue());
-        Assert.assertSame(testeesModels, testeesFoundedModels);
+        verify(testeesOptions).withRelations(testeesModels);
+        Assert.assertEquals(testeesModels, foundedTesteesModels);
     }
 
     @Test
     public void testFindPresentModel() throws Exception {
-        final TesteeEntity testeeEntity = this.testeesSupport.getEntityFixtureMock(0);
-        when(this.testeesMapper.find(0)).thenReturn(testeeEntity);
+        final Integer id = 1;
+        final TesteeEntity testeeEntity = Entities.createTesteeEntityMock(
+                id,
+                "NewFirstName",
+                "NewLastName1",
+                "NewSurname1",
+                307,
+                7
+        );
+        given(this.testeesMapper.find(id)).willReturn(testeeEntity);
 
-        final TesteeModelInterface testeeFoundedModel = this.testeesService.find(0);
+        final TesteeModelInterface testeeModel = this.testeesService.find(id);
 
-        this.testeesSupport.assertEquals(this.testeesSupport.getModelFixtureMock(0), testeeFoundedModel);
+        Assert.assertEquals(this.mapTesteeModel(testeeEntity), testeeModel);
     }
 
     @Test
     public void testFindAbsentModel() throws Exception {
         final Integer id = 10;
-        when(this.testeesMapper.find(id)).thenReturn(null);
+        given(this.testeesMapper.find(id)).willReturn(null);
 
         final TesteeModelInterface testeeModel = this.testeesService.find(id);
 
-        Assert.assertNull(testeeModel);
+        Assert.assertEquals(null, testeeModel);
     }
 
     @Test
     public void testFindWithOptions() throws Exception {
-        final ArgumentCaptor<TesteeModelInterface> testeeModelCaptor = ArgumentCaptor.forClass(TesteeModelInterface.class);
-        final TesteeEntity testeeEntity = this.testeesSupport.getEntityFixtureMock(0);
-        final TesteeModelInterface testeeModel = this.testeesSupport.getModelFixtureMock(0);
+        final Integer id = 1;
+        final TesteeEntity testeeEntity = Entities.createTesteeEntityMock(
+                id,
+                "NewFirstName",
+                "NewLastName1",
+                "NewSurname1",
+                307,
+                7
+        );
+        final TesteeModelInterface testeeModel = this.mapTesteeModel(testeeEntity);
         final TesteesOptionsInterface testeesOptions = Mockito.mock(TesteesOptionsInterface.class);
-        when(this.testeesMapper.find(testeeModel.getId())).thenReturn(testeeEntity);
-        when(testeesOptions.withRelations(testeeModelCaptor.capture())).thenReturn(testeeModel);
+        given(this.testeesMapper.find(id)).willReturn(testeeEntity);
+        given(testeesOptions.withRelations(testeeModel)).willReturn(testeeModel);
 
-        final TesteeModelInterface testeeFoundedModel = this.testeesService.find(testeeModel.getId(), testeesOptions);
+        final TesteeModelInterface foundedTesteeModel = this.testeesService.find(id, testeesOptions);
 
-        this.assertServicesSet(testeesOptions);
-        this.testeesSupport.assertEquals(testeeModel, testeeModelCaptor.getValue());
-        Assert.assertSame(testeeModel, testeeFoundedModel);
+        Assert.assertEquals(testeeModel, foundedTesteeModel);
+        verify(testeesOptions).withRelations(testeeModel);
     }
 
     @Test
     public void testFindByQuizPresentModel() throws Exception {
-        final QuizModelInterface quizModel = this.quizzesSupport.getModelFixtureMock(0);
-        final TesteeEntity testeeEntity = this.testeesSupport.getEntityFixtureMock(0);
-        when(this.testeesMapper.findByQuizId(quizModel.getId())).thenReturn(testeeEntity);
+        final Integer quizId = 3;
+        final TesteeEntity testeeEntity = Entities.createTesteeEntityMock(
+                3,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                quizId);
+        given(this.testeesMapper.findByQuizId(quizId)).willReturn(testeeEntity);
 
-        final TesteeModelInterface testeeFoundedModel = this.testeesService.findByQuiz(quizModel);
+        final QuizModelInterface quizModel = Mockito.mock(QuizModelInterface.class);
+        Mockito.when(quizModel.getId()).thenReturn(quizId);
 
-        this.testeesSupport.assertEquals(this.testeesSupport.getModelFixtureMock(0), testeeFoundedModel);
+        final TesteeModelInterface testeeModel = this.testeesService.findByQuiz(quizModel);
+        Assert.assertNotNull(testeeModel);
+        Assert.assertEquals(this.mapTesteeModel(testeeEntity), testeeModel);
     }
 
     @Test
     public void testFindByQuizWithOptions() throws Exception {
-        final ArgumentCaptor<TesteeModelInterface> testeeModelCaptor = ArgumentCaptor.forClass(TesteeModelInterface.class);
-        final QuizModelInterface quizModel = this.quizzesSupport.getModelFixtureMock(0);
-        final TesteeEntity testeeEntity = this.testeesSupport.getEntityFixtureMock(0);
+        final Integer quizId = 3;
+        final TesteeEntity testeeEntity = Entities.createTesteeEntityMock(
+                3,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                quizId);
         final TesteeModelInterface testeeModel = this.mapTesteeModel(testeeEntity);
 
         final TesteesOptionsInterface testeesOptions = Mockito.mock(TesteesOptionsInterface.class);
-        when(this.testeesMapper.findByQuizId(quizModel.getId())).thenReturn(testeeEntity);
-        when(testeesOptions.withRelations(testeeModelCaptor.capture())).thenReturn(testeeModel);
+        given(this.testeesMapper.findByQuizId(quizId)).willReturn(testeeEntity);
+        given(testeesOptions.withRelations(testeeModel)).willReturn(testeeModel);
 
-        final TesteeModelInterface testeeFoundedModel
+        final TesteeModelInterface foundedTesteeModel
                 = this.testeesService.findByQuiz(testeeModel.getQuiz(), testeesOptions);
 
-        this.assertServicesSet(testeesOptions);
-        this.testeesSupport.assertEquals(testeeModel, testeeModelCaptor.getValue());
-        Assert.assertSame(testeeModel, testeeFoundedModel);
+        verify(testeesOptions).withRelations(testeeModel);
+        Assert.assertNotNull(foundedTesteeModel);
+        Assert.assertEquals(testeeModel, foundedTesteeModel);
     }
 
     @Test
     public void testFindByQuizAbsentModel() throws Exception {
-        final QuizModelInterface quizModel = this.quizzesSupport.getModelFixtureMock(0);
-        given(this.testeesMapper.findByQuizId(quizModel.getId())).willReturn(null);
+        final Integer quizId = 5;
+        given(this.testeesMapper.findByQuizId(quizId)).willReturn(null);
 
-        final TesteeModelInterface testeeFoundedModel = this.testeesService.findByQuiz(quizModel);
-        Assert.assertNull(testeeFoundedModel);
+        final QuizModelInterface quizModel = Mockito.mock(QuizModelInterface.class);
+        Mockito.when(quizModel.getId()).thenReturn(quizId);
+
+        final TesteeModelInterface testeeModel = this.testeesService.findByQuiz(quizModel);
+        Assert.assertNull(testeeModel);
     }
 
     @Test
     public void testSaveCreatesEntity() throws Exception {
-        final ArgumentCaptor<TesteeEntity> testeeEntityCaptor = ArgumentCaptor.forClass(TesteeEntity.class);
-        final TesteeModelInterface testeeModel = this.testeesSupport.getModelAdditionalMock(0);
+        final TesteeModelInterface testeeModel = Models.createTesteeModel(
+                null,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                1
+        );
+        doAnswer(invocation -> {
+            final TesteeEntity testeeEntity = (TesteeEntity) invocation.getArguments()[0];
+            testeeEntity.setId(5);
+            return null;
+        }).when(this.testeesMapper).insert(Mockito.any(TesteeEntity.class));
 
         this.testeesService.save(testeeModel);
 
-        verify(this.testeesMapper, times(1)).insert(testeeEntityCaptor.capture());
-        this.testeesSupport.assertEquals(this.testeesSupport.getEntityAdditionalMock(0), testeeEntityCaptor.getValue());
+        verify(this.testeesMapper, times(1)).insert(this.mapTesteeEntity(testeeModel));
+        Assert.assertEquals((Integer) 5, testeeModel.getId());
     }
 
     @Test
     public void testSaveUpdatesEntity() throws Exception {
-        final ArgumentCaptor<TesteeEntity> testeeEntityCaptor = ArgumentCaptor.forClass(TesteeEntity.class);
-        final TesteeModelInterface testeeModel = this.testeesSupport.getModelFixtureMock(0);
+        final TesteeModelInterface testeeModel = Models.createTesteeModel(
+                1,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                1
+        );
 
         this.testeesService.save(testeeModel);
 
-        verify(this.testeesMapper, times(1)).update(testeeEntityCaptor.capture());
-        this.testeesSupport.assertEquals(this.testeesSupport.getEntityFixtureMock(0), testeeEntityCaptor.getValue());
+        verify(this.testeesMapper, times(1)).update(this.mapTesteeEntity(testeeModel));
     }
 
     @Test
     public void testSaveWithOptions() throws Exception {
-        final TesteeModelInterface testeeModel = this.testeesSupport.getModelFixtureMock(0);
+        final TesteeModelInterface testeeModel = Models.createTesteeModel(
+                null,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                1
+        );
         final TesteesOptionsInterface testeesOptions = Mockito.mock(TesteesOptionsInterface.class);
 
         this.testeesService.save(testeeModel, testeesOptions);
 
-        this.assertServicesSet(testeesOptions);
-        verify(testeesOptions, times(1)).saveWithRelations(testeeModel);
-        verifyNoMoreInteractions(this.testeesMapper);
+        verify(testeesOptions).saveWithRelations(testeeModel);
     }
 
     @Test
     public void testDeleteIdentifiedModel() throws Exception {
-        final ArgumentCaptor<TesteeEntity> testeeEntityCaptor = ArgumentCaptor.forClass(TesteeEntity.class);
+        final TesteeModelInterface testeeModel = Models.createTesteeModel(
+                1,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                1
+        );
 
-        this.testeesService.delete(this.testeesSupport.getModelFixtureMock(0));
+        this.testeesService.delete(testeeModel);
 
-        verify(this.testeesMapper, times(1)).delete(testeeEntityCaptor.capture());
-        this.testeesSupport.assertEquals(this.testeesSupport.getEntityFixtureMock(0), testeeEntityCaptor.getValue());
+        verify(this.testeesMapper, times(1)).delete(this.mapTesteeEntity(testeeModel));
     }
 
     @Test
     public void testDeleteUnidentifiedModel() throws Exception {
-        final TesteeModelInterface testeeModel = this.testeesSupport.getModelAdditionalMock(0);
+        final TesteeModelInterface testeeModel = Models.createTesteeModel(
+                null,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                1
+        );
 
         exception.expect(DeleteUnidentifiedModelException.class);
         this.testeesService.delete(testeeModel);
@@ -236,13 +309,18 @@ public class TesteesServiceTest {
 
     @Test
     public void testDeleteWithOptions() throws Exception {
-        final TesteeModelInterface testeeModel = this.testeesSupport.getModelFixtureMock(0);
+        final TesteeModelInterface testeeModel = Models.createTesteeModel(
+                1,
+                "FirstName",
+                "LastName",
+                "Surname",
+                301,
+                1
+        );
         final TesteesOptionsInterface testeesOptions = Mockito.mock(TesteesOptionsInterface.class);
 
         this.testeesService.delete(testeeModel, testeesOptions);
 
-        this.assertServicesSet(testeesOptions);
-        verify(testeesOptions, times(1)).deleteWithRelations(testeeModel);
-        verifyNoMoreInteractions(testeesMapper);
+        verify(testeesOptions).deleteWithRelations(testeeModel);
     }
 }

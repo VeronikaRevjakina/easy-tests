@@ -245,7 +245,7 @@ public class IssueStandardTopicPrioritiesServiceTest {
 
         this.topicPrioritiesService.save(topicPriorityModel);
 
-        // TODO verify(this.topicPrioritiesMapper, times(1)).insert(this.mapTopicPriorityEntity(topicPriorityModel));
+        verify(this.topicPrioritiesMapper, times(1)).insert(this.mapTopicPriorityEntity(topicPriorityModel));
         Assert.assertEquals(id, topicPriorityModel.getId());
     }
 

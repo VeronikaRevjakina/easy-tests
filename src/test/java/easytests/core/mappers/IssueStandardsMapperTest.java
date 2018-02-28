@@ -1,92 +1,123 @@
 package easytests.core.mappers;
 
+import easytests.config.DatabaseConfig;
 import easytests.core.entities.IssueStandardEntity;
-import easytests.support.IssueStandardSupport;
 import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.*;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.junit4.*;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
+
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import org.springframework.beans.factory.annotation.Autowired;
-
 
 /**
- * @author Yarik2308
+ * @author SingularityA
  */
-public class IssueStandardsMapperTest extends AbstractMapperTest {
-
-    protected IssueStandardSupport issueStandardSupport = new IssueStandardSupport();
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@TestPropertySource(locations = {"classpath:database.test.properties"})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {DatabaseConfig.class})
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:sql/mappersTestData.sql")
+public class IssueStandardsMapperTest {
 
     @Autowired
     private IssueStandardsMapper issueStandardsMapper;
 
     @Test
     public void testFindAll() throws Exception {
-        final List<IssueStandardEntity> issueStandardsFoundedEntities = this.issueStandardsMapper.findAll();
+        List<IssueStandardEntity> issueStandardEntities = this.issueStandardsMapper.findAll();
 
-        Assert.assertEquals(2, issueStandardsFoundedEntities.size());
-        Integer index = 0;
-        for (IssueStandardEntity issueStandardEntity: issueStandardsFoundedEntities) {
-            final IssueStandardEntity issueStandartFixtureEntity = this.issueStandardSupport.getEntityFixtureMock(index);
-            this.issueStandardSupport.assertEquals(issueStandartFixtureEntity, issueStandardEntity);
-            index++;
-        }
+        Assert.assertNotNull(issueStandardEntities);
+        Assert.assertEquals(2, issueStandardEntities.size());
     }
 
     @Test
     public void testFind() throws Exception {
-        final IssueStandardEntity issueStandardFixtureEntity = this.issueStandardSupport.getEntityFixtureMock(0);
+        final IssueStandardEntity issueStandardEntity = this.issueStandardsMapper.find(1);
 
-        final IssueStandardEntity issueStandardFoundedEntity = this.issueStandardsMapper.find(1);
-
-        this.issueStandardSupport.assertEquals(issueStandardFixtureEntity, issueStandardFoundedEntity);
+        Assert.assertEquals((Integer) 1, issueStandardEntity.getId());
+        Assert.assertEquals((Integer) 300, issueStandardEntity.getTimeLimit());
+        Assert.assertEquals((Integer) 30, issueStandardEntity.getQuestionsNumber());
+        Assert.assertEquals((Integer) 1, issueStandardEntity.getSubjectId());
     }
 
     @Test
     public void testFindBySubjectId() throws Exception {
-        final IssueStandardEntity issueStandardFixtireEntity = this.issueStandardSupport.getEntityFixtureMock(1);
+        final IssueStandardEntity issueStandardEntity = this.issueStandardsMapper.findBySubjectId(3);
 
-        final IssueStandardEntity issueStandardFoundedEntity = this.issueStandardsMapper.findBySubjectId(3);
-
-        this.issueStandardSupport.assertEquals(issueStandardFixtireEntity, issueStandardFoundedEntity);
+        Assert.assertEquals((Integer) 2, issueStandardEntity.getId());
+        Assert.assertEquals(null, issueStandardEntity.getTimeLimit());
+        Assert.assertEquals((Integer) 15, issueStandardEntity.getQuestionsNumber());
+        Assert.assertEquals((Integer) 3, issueStandardEntity.getSubjectId());
     }
 
     @Test
     public void testInsert() throws Exception {
-        final ArgumentCaptor<Integer> id = ArgumentCaptor.forClass(Integer.class);
-        final IssueStandardEntity issueStandardUnidentifiedEntity = this.issueStandardSupport.getEntityAdditionalMock(0);
+        final Integer id = this.issueStandardsMapper.findAll().size() + 1;
+        final Integer timeLimit = 3600;
+        final Integer questionsNumber = 20;
+        final Integer subjectId = 2;
 
-        this.issueStandardsMapper.insert(issueStandardUnidentifiedEntity);
+        IssueStandardEntity issueStandardEntity = Mockito.mock(IssueStandardEntity.class);
+        Mockito.when(issueStandardEntity.getTimeLimit()).thenReturn(timeLimit);
+        Mockito.when(issueStandardEntity.getQuestionsNumber()).thenReturn(questionsNumber);
+        Mockito.when(issueStandardEntity.getSubjectId()).thenReturn(subjectId);
 
-        verify(issueStandardUnidentifiedEntity, times(1)).setId(id.capture());
-        Assert.assertNotNull(id.getValue());
-        final IssueStandardEntity issueStandardInsertedEntity = this.issueStandardsMapper.find(id.getValue());
-        Assert.assertNotNull(issueStandardInsertedEntity);
-        this.issueStandardSupport.assertEqualsWithoutId(issueStandardUnidentifiedEntity, issueStandardInsertedEntity);
+        this.issueStandardsMapper.insert(issueStandardEntity);
+
+        verify(issueStandardEntity, times(1)).setId(id);
+
+        issueStandardEntity = this.issueStandardsMapper.find(id);
+        Assert.assertEquals(id, issueStandardEntity.getId());
+        Assert.assertEquals(timeLimit, issueStandardEntity.getTimeLimit());
+        Assert.assertEquals(questionsNumber, issueStandardEntity.getQuestionsNumber());
+        Assert.assertEquals(subjectId, issueStandardEntity.getSubjectId());
     }
 
     @Test
     public void testUpdate() throws Exception {
-        final IssueStandardEntity issueStandardChangedEntity = this.issueStandardSupport.getEntityAdditionalMock(1);
-        final IssueStandardEntity issueStandardBeforeUpdateEntity = this.issueStandardsMapper.find(issueStandardChangedEntity.getId());
-        Assert.assertNotNull(issueStandardBeforeUpdateEntity);
-        this.issueStandardSupport.assertNotEqualsWithoutId(issueStandardChangedEntity, issueStandardBeforeUpdateEntity);
+        final Integer id = 1;
+        final Integer timeLimit = 3600;
+        final Integer questionsNumber = 20;
+        final Integer subjectId = 2;
 
-        this.issueStandardsMapper.update(issueStandardChangedEntity);
+        IssueStandardEntity issueStandardEntity = this.issueStandardsMapper.find(id);
+        Assert.assertNotNull(issueStandardEntity);
+        Assert.assertEquals(id, issueStandardEntity.getId());
+        Assert.assertNotEquals(timeLimit, issueStandardEntity.getTimeLimit());
+        Assert.assertNotEquals(questionsNumber, issueStandardEntity.getQuestionsNumber());
+        Assert.assertNotEquals(subjectId, issueStandardEntity.getSubjectId());
 
-        final IssueStandardEntity issueStandardUpdatedEntity = this.issueStandardsMapper.find(issueStandardChangedEntity.getId());
-        this.issueStandardSupport.assertEquals(issueStandardChangedEntity, issueStandardUpdatedEntity);
+        issueStandardEntity = Mockito.mock(IssueStandardEntity.class);
+        Mockito.when(issueStandardEntity.getId()).thenReturn(id);
+        Mockito.when(issueStandardEntity.getTimeLimit()).thenReturn(timeLimit);
+        Mockito.when(issueStandardEntity.getQuestionsNumber()).thenReturn(questionsNumber);
+        Mockito.when(issueStandardEntity.getSubjectId()).thenReturn(subjectId);
+
+        this.issueStandardsMapper.update(issueStandardEntity);
+
+        issueStandardEntity = this.issueStandardsMapper.find(id);
+        Assert.assertEquals(id, issueStandardEntity.getId());
+        Assert.assertEquals(timeLimit, issueStandardEntity.getTimeLimit());
+        Assert.assertEquals(questionsNumber, issueStandardEntity.getQuestionsNumber());
+        Assert.assertEquals(subjectId, issueStandardEntity.getSubjectId());
     }
 
     @Test
     public void deleteTest() throws Exception {
-        final Integer id = this.issueStandardSupport.getEntityFixtureMock(0).getId();
-        final IssueStandardEntity issueStandardFoundedEntity = this.issueStandardsMapper.find(id);
-        Assert.assertNotNull(issueStandardFoundedEntity);
+        IssueStandardEntity issueStandardEntity = this.issueStandardsMapper.find(1);
+        Assert.assertNotNull(issueStandardEntity);
 
-        this.issueStandardsMapper.delete(issueStandardFoundedEntity);
-
-        Assert.assertNull(this.issueStandardsMapper.find(id));
+        this.issueStandardsMapper.delete(issueStandardEntity);
+        issueStandardEntity = this.issueStandardsMapper.find(1);
+        Assert.assertNull(issueStandardEntity);
     }
 }

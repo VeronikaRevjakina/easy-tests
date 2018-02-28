@@ -1,107 +1,159 @@
 package easytests.core.mappers;
 
+import easytests.config.DatabaseConfig;
 import easytests.core.entities.QuizEntity;
-import easytests.support.QuizzesSupport;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.beans.factory.annotation.Autowired;
-import java.util.ArrayList;
-import java.util.List;
+import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * @author miron97
+ * @author vkpankov
  */
-public class QuizzesMapperTest extends AbstractMapperTest {
-
-    private QuizzesSupport quizzesSupport = new QuizzesSupport();
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@TestPropertySource(locations = {"classpath:database.test.properties"})
+@ContextConfiguration(loader = AnnotationConfigContextLoader.class, classes = {DatabaseConfig.class})
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:sql/mappersTestData.sql")
+public class QuizzesMapperTest {
 
     @Autowired
     private QuizzesMapper quizzesMapper;
 
     @Test
-    public void testFindAll() throws Exception {
-        final List<QuizEntity> quizFoundedEntities = this.quizzesMapper.findAll();
+    public void testFind() throws Exception {
 
-        Assert.assertEquals(3, quizFoundedEntities.size());
+        final QuizEntity quiz = this.quizzesMapper.find(1);
 
-        Integer index = 0;
-        for(QuizEntity quizEntity: quizFoundedEntities){
-            final QuizEntity quizFixtureEntity = this.quizzesSupport.getEntityFixtureMock(index);
-
-            this.quizzesSupport.assertEquals(quizFixtureEntity, quizEntity);
-            index++;
-        }
+        Assert.assertEquals((long) 1, (long) quiz.getId());
+        Assert.assertEquals("test_invite_code1", quiz.getInviteCode());
+        Assert.assertEquals(LocalDateTime.of(2003,2,1,0,0,0), quiz.getStartedAt());
+        Assert.assertEquals(LocalDateTime.of(2003,3,1,0,0,0), quiz.getFinishedAt());
+        Assert.assertEquals(false, quiz.getCodeExpired());
     }
 
     @Test
-    public void testFind() throws Exception {
-        final QuizEntity quizFixtureEntity = this.quizzesSupport.getEntityFixtureMock(1);
+    public void testFindAll() throws Exception {
 
-        final QuizEntity quizFoundedEntity = this.quizzesMapper.find(quizFixtureEntity.getId());
+        final List<QuizEntity> quizEntities = this.quizzesMapper.findAll();
 
-        this.quizzesSupport.assertEquals(quizFixtureEntity, quizFoundedEntity);
+        Assert.assertNotNull(quizEntities);
+        Assert.assertEquals((long) 3, (long) quizEntities.size());
+
+    }
+
+    @Test
+    public void testIssueNotNull() throws Exception {
+
+        final List<QuizEntity> quizEntities = this.quizzesMapper.findByIssueId(4);
+
+        Assert.assertNotNull(quizEntities);
+        Assert.assertEquals(0, quizEntities.size());
+
     }
 
     @Test
     public void testFindByIssueId() throws Exception {
-        final List<QuizEntity> quizzesFixtureEntities = new ArrayList<>();
-        quizzesFixtureEntities.add(this.quizzesSupport.getEntityFixtureMock(1));
 
-        final List<QuizEntity> quizzesFoundedEntities = this.quizzesMapper.findByIssueId(2);
+        final List<QuizEntity> quizEntities = this.quizzesMapper.findByIssueId(3);
 
-        Assert.assertEquals(1, quizzesFoundedEntities.size());
-
-        Integer index = 0;
-        for(QuizEntity quizEntity: quizzesFoundedEntities) {
-            this.quizzesSupport.assertEquals(quizzesFixtureEntities.get(index), quizEntity);
-            index++;
-        }
+        Assert.assertEquals(1, quizEntities.size());
+        Assert.assertEquals("test_invite_code3", quizEntities.get(0).getInviteCode());
+        Assert.assertEquals(LocalDateTime.of(2003,2,1,0,0,0), quizEntities.get(0).getStartedAt());
+        Assert.assertEquals(LocalDateTime.of(2003,3,1,0,0,0), quizEntities.get(0).getFinishedAt());
+        Assert.assertEquals(true, quizEntities.get(0).getCodeExpired());
     }
 
     @Test
     public void testInsert() throws Exception {
-        final ArgumentCaptor<Integer> id = ArgumentCaptor.forClass(Integer.class);
-        final QuizEntity quizUnidentifiedEntity = this.quizzesSupport.getEntityAdditionalMock(0);
+        final Integer id = this.quizzesMapper.findAll().size() + 1;
 
-        this.quizzesMapper.insert(quizUnidentifiedEntity);
+        final Integer testIssueId = 1;
 
-        verify(quizUnidentifiedEntity, times(1)).setId(id.capture());
-        Assert.assertNotNull(id.getValue());
+        final String testInviteCode = "test";
 
-        final QuizEntity quizInsertedEntity = quizzesMapper.find(id.getValue());
+        final LocalDateTime testStartedAt = LocalDateTime.of(2017,5,18,12,1,0);
 
-        Assert.assertNotNull(quizInsertedEntity);
-        this.quizzesSupport.assertEqualsWithoutId(quizUnidentifiedEntity, quizInsertedEntity);
+        final LocalDateTime testFinishedAt = LocalDateTime.of(2017,5,18,13,0,0);
+
+        final boolean testCodeExpired = false;
+
+
+        final QuizEntity testQuiz = Mockito.mock(QuizEntity.class);
+
+        Mockito.when(testQuiz.getId()).thenReturn(id);
+        Mockito.when(testQuiz.getInviteCode()).thenReturn(testInviteCode);
+        Mockito.when(testQuiz.getIssueId()).thenReturn(testIssueId);
+        Mockito.when(testQuiz.getStartedAt()).thenReturn(testStartedAt);
+        Mockito.when(testQuiz.getFinishedAt()).thenReturn(testFinishedAt);
+        Mockito.when(testQuiz.getCodeExpired()).thenReturn(testCodeExpired);
+
+        quizzesMapper.insert(testQuiz);
+
+        verify(testQuiz, times(1)).setId(id);
+
+        final QuizEntity readQuiz = quizzesMapper.find(testQuiz.getId());
+
+        Assert.assertNotNull(readQuiz);
+        Assert.assertEquals(testIssueId, readQuiz.getIssueId());
+        Assert.assertEquals(testInviteCode, readQuiz.getInviteCode());
+        Assert.assertEquals(testStartedAt, readQuiz.getStartedAt());
+        Assert.assertEquals(testFinishedAt, readQuiz.getFinishedAt());
+        Assert.assertEquals(testCodeExpired, readQuiz.getCodeExpired());
     }
 
     @Test
     public void testUpdate() throws Exception {
-        final QuizEntity quizChangedEntity = this.quizzesSupport.getEntityAdditionalMock(1);
-        final QuizEntity quizBeforeUpdateEntity = this.quizzesMapper.find(quizChangedEntity.getId());
 
-        Assert.assertNotNull(quizBeforeUpdateEntity);
-        this.quizzesSupport.assertNotEqualsWithoutIds(quizChangedEntity, quizBeforeUpdateEntity);
+        final Integer id = 2;
 
-        this.quizzesMapper.update(quizChangedEntity);
-        final QuizEntity quizUpdatedEntity = this.quizzesMapper.find(quizChangedEntity.getId());
+        final String inviteCode = "updated";
 
-        this.quizzesSupport.assertEquals(quizChangedEntity, quizUpdatedEntity);
+        final LocalDateTime testStartedAt = LocalDateTime.of(2017,5,18,12,1,0);
+
+        final LocalDateTime testFinishedAt = LocalDateTime.of(2017,5,18,13,0,0);
+
+        final boolean testCodeExpired = false;
+
+        QuizEntity quiz = this.quizzesMapper.find(id);
+
+        Assert.assertNotEquals(inviteCode, quiz.getInviteCode());
+
+        quiz = Mockito.mock(QuizEntity.class);
+
+        Mockito.when(quiz.getId()).thenReturn(id);
+        Mockito.when(quiz.getInviteCode()).thenReturn(inviteCode);
+        Mockito.when(quiz.getStartedAt()).thenReturn(testStartedAt);
+        Mockito.when(quiz.getFinishedAt()).thenReturn(testFinishedAt);
+        Mockito.when(quiz.getCodeExpired()).thenReturn(testCodeExpired);
+
+        this.quizzesMapper.update(quiz);
+
+        final QuizEntity readQuiz = quizzesMapper.find(id);
+        Assert.assertEquals(inviteCode, readQuiz.getInviteCode());
+        Assert.assertEquals(testStartedAt, readQuiz.getStartedAt());
+        Assert.assertEquals(testFinishedAt, readQuiz.getFinishedAt());
+        Assert.assertEquals(testCodeExpired, readQuiz.getCodeExpired());
+
     }
 
     @Test
     public void testDelete() throws Exception {
-        final Integer id = this.quizzesSupport.getEntityFixtureMock(0).getId();
-        QuizEntity quizFoundedEntity = this.quizzesMapper.find(id);
-
-        Assert.assertNotNull(quizFoundedEntity);
-
-        this.quizzesMapper.delete(quizFoundedEntity);
-
-        Assert.assertNull(this.quizzesMapper.find(id));
-    }
-
-}
+        QuizEntity quiz = this.quizzesMapper.find(1);
+        Assert.assertNotNull(quiz);
+        this.quizzesMapper.delete(quiz);
+        quiz = this.quizzesMapper.find(1);
+        Assert.assertNull(quiz);
+    }}

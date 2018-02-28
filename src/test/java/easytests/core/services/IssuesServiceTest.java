@@ -215,7 +215,7 @@ public class IssuesServiceTest {
 
         this.issuesService.save(issueModel);
 
-        // TODO verify(this.issuesMapper, times(1)).insert(this.mapIssueEntity(issueModel));
+        verify(this.issuesMapper, times(1)).insert(this.mapIssueEntity(issueModel));
         Assert.assertEquals((Integer) 5, issueModel.getId());
     }
 

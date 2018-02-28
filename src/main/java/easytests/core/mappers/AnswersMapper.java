@@ -4,7 +4,6 @@ import easytests.core.entities.AnswerEntity;
 import java.util.List;
 import org.apache.ibatis.annotations.*;
 
-
 /**
  * @author rezenbekk
  */

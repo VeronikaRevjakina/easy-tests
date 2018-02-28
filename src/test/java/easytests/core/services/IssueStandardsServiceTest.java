@@ -205,7 +205,7 @@ public class IssueStandardsServiceTest {
 
         this.issueStandardsService.save(issueStandardModel);
 
-        // TODO verify(this.issueStandardsMapper, times(1)).insert(this.mapIssueStandardEntity(issueStandardModel));
+        verify(this.issueStandardsMapper, times(1)).insert(this.mapIssueStandardEntity(issueStandardModel));
         Assert.assertEquals(id, issueStandardModel.getId());
     }
 

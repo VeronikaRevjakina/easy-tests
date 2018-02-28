@@ -1,4 +1,4 @@
-package easytests.core.mappers.providers;
+package easytests.core.mappers.testschecker;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
@@ -8,8 +8,8 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 /**
  * @author vkpankov
  */
-public class MapperComponentProvider extends ClassPathScanningCandidateComponentProvider {
-    public MapperComponentProvider() {
+class InterfaceComponentProvider extends ClassPathScanningCandidateComponentProvider {
+    InterfaceComponentProvider() {
         super(false);
         addIncludeFilter(new AnnotationTypeFilter(Mapper.class, false));
     }

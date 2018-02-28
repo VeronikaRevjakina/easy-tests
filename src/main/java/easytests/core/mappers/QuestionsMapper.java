@@ -4,12 +4,10 @@ import easytests.core.entities.QuestionEntity;
 import java.util.List;
 import org.apache.ibatis.annotations.*;
 
-
 /**
  * @author firkhraag
  */
 @Mapper
-@SuppressWarnings("checkstyle:linelength")
 public interface QuestionsMapper {
 
     @Results(

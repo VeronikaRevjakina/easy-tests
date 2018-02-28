@@ -8,8 +8,6 @@ import org.apache.ibatis.annotations.*;
 /**
  * @author vkpankov
  */
-@Mapper
-@SuppressWarnings("checkstyle:linelength")
 public interface SubjectsMapper {
 
     @Select("SELECT * FROM subjects")

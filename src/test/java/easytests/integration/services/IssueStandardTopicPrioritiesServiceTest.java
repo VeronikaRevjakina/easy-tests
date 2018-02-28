@@ -8,13 +8,21 @@ import easytests.core.services.IssueStandardTopicPrioritiesService;
 import easytests.support.Models;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author SingularityA
  */
-public class IssueStandardTopicPrioritiesServiceTest extends AbstractServiceTest {
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@TestPropertySource(locations = {"classpath:database.test.properties"})
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:sql/mappersTestData.sql")
+public class IssueStandardTopicPrioritiesServiceTest {
 
     @Autowired
     private IssueStandardTopicPrioritiesService topicPrioritiesService;
@@ -58,15 +66,13 @@ public class IssueStandardTopicPrioritiesServiceTest extends AbstractServiceTest
 
     @Test
     public void testSaveInsertsModel() throws Exception {
+        final Integer id = this.topicPrioritiesService.findAll().size() + 1;
         final IssueStandardTopicPriorityModelInterface topicPriorityModel
                 = Models.createTopicPriorityModel(null, 4, true, 4);
 
         this.topicPrioritiesService.save(topicPriorityModel);
-
-        Assert.assertNotNull(topicPriorityModel.getId());
-
         final IssueStandardTopicPriorityModelInterface foundedTopicPriorityModel
-                = this.topicPrioritiesService.find(topicPriorityModel.getId());
+                = this.topicPrioritiesService.find(id);
 
         Assert.assertEquals(topicPriorityModel, foundedTopicPriorityModel);
     }

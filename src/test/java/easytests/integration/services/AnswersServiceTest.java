@@ -8,14 +8,23 @@ import easytests.core.services.AnswersService;
 import easytests.support.Models;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.junit4.SpringRunner;
 
 
 /**
  * @author rezenbekk
  */
-public class AnswersServiceTest extends AbstractServiceTest {
-
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@SuppressWarnings("checkstyle:multiplestringliterals")
+@TestPropertySource(locations = {"classpath:database.test.properties"})
+@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:sql/mappersTestData.sql")
+public class AnswersServiceTest {
     @Autowired
     private AnswersService answersService;
 
@@ -62,11 +71,11 @@ public class AnswersServiceTest extends AbstractServiceTest {
 
     @Test
     public void testSaveInsertsModel() throws Exception {
+        final Integer id = this.answersService.findAll().size() + 1;
         final AnswerModelInterface answerModel = Models.createAnswerModel(null, "New answer", 5, 1, true);
 
         this.answersService.save(answerModel);
-        Assert.assertNotNull(answerModel.getId());
-        final AnswerModelInterface builtAnswerModel = this.answersService.find(answerModel.getId());
+        final AnswerModelInterface builtAnswerModel = this.answersService.find(id);
 
         Assert.assertEquals(answerModel, builtAnswerModel);
     }

@@ -8,10 +8,7 @@ import org.apache.ibatis.annotations.*;
 /**
  * @author malinink
  */
-@Mapper
-@SuppressWarnings("checkstyle:linelength")
 public interface TopicsMapper {
-
     @Results(
         id = "Topic",
         value = {
@@ -39,5 +36,4 @@ public interface TopicsMapper {
 
     @Delete("DELETE FROM topics WHERE id=#{id}")
     void delete(TopicEntity topic);
-
 }

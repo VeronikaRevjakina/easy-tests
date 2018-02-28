@@ -1,29 +1,51 @@
 package easytests.core.entities;
 
 import easytests.core.models.IssueStandardQuestionTypeOptionModelInterface;
-import easytests.support.IssueStandardQuestionTypeOptionsSupport;
+import easytests.core.models.empty.IssueStandardModelEmpty;
+import easytests.core.models.empty.QuestionTypeModelEmpty;
+import org.junit.Assert;
 import org.junit.Test;
-
+import org.meanbean.test.BeanTester;
+import org.mockito.Mockito;
 
 /**
- * @author VeronikaRevjakina
+ * @author SingularityA
  */
-public class IssueStandardQuestionTypeOptionEntityTest extends AbstractEntityTest {
-
-    private IssueStandardQuestionTypeOptionsSupport issueStandardQuestionTypeOptionsSupport = new IssueStandardQuestionTypeOptionsSupport();
-
+public class IssueStandardQuestionTypeOptionEntityTest {
     @Test
     public void testCommon() throws Exception {
-        this.testCommon(IssueStandardQuestionTypeOptionEntity.class);
+        new BeanTester().testBean(IssueStandardQuestionTypeOptionEntity.class);
     }
 
     @Test
     public void testMap() throws Exception {
-        final IssueStandardQuestionTypeOptionModelInterface issueStandardQuestionTypeOptionsModel = this.issueStandardQuestionTypeOptionsSupport.getModelFixtureMock(0);
-        final IssueStandardQuestionTypeOptionEntity issueStandardQuestionTypeOptionEntity = new IssueStandardQuestionTypeOptionEntity();
+        final Integer id = 3;
+        final Integer questionTypeId = 4;
+        final Integer minQuestions = 10;
+        final Integer maxQuestions = 20;
+        final Integer timeLimit = 600;
+        final Integer issueStandardId = 12;
 
-        issueStandardQuestionTypeOptionEntity.map(issueStandardQuestionTypeOptionsModel);
+        final IssueStandardQuestionTypeOptionModelInterface questionTypeOptionModel
+                = Mockito.mock(IssueStandardQuestionTypeOptionModelInterface.class);
 
-        this.issueStandardQuestionTypeOptionsSupport.assertEquals(issueStandardQuestionTypeOptionsModel, issueStandardQuestionTypeOptionEntity);
+        Mockito.when(questionTypeOptionModel.getId()).thenReturn(id);
+        Mockito.when(questionTypeOptionModel.getQuestionType()).thenReturn(new QuestionTypeModelEmpty(questionTypeId));
+        Mockito.when(questionTypeOptionModel.getMinQuestions()).thenReturn(minQuestions);
+        Mockito.when(questionTypeOptionModel.getMaxQuestions()).thenReturn(maxQuestions);
+        Mockito.when(questionTypeOptionModel.getTimeLimit()).thenReturn(timeLimit);
+        Mockito.when(questionTypeOptionModel.getIssueStandard())
+                .thenReturn(new IssueStandardModelEmpty(issueStandardId));
+
+        final IssueStandardQuestionTypeOptionEntity questionTypeOptionEntity
+                = new IssueStandardQuestionTypeOptionEntity();
+        questionTypeOptionEntity.map(questionTypeOptionModel);
+
+        Assert.assertEquals(id, questionTypeOptionEntity.getId());
+        Assert.assertEquals(questionTypeId, questionTypeOptionEntity.getQuestionTypeId());
+        Assert.assertEquals(minQuestions, questionTypeOptionEntity.getMinQuestions());
+        Assert.assertEquals(maxQuestions, questionTypeOptionEntity.getMaxQuestions());
+        Assert.assertEquals(timeLimit, questionTypeOptionEntity.getTimeLimit());
+        Assert.assertEquals(issueStandardId, questionTypeOptionEntity.getIssueStandardId());
     }
 }
